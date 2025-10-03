@@ -40,12 +40,10 @@ const registerUser = asyncHandler( async (req, res) => {
     if (existedUser) {
         throw new ApiError(409, "User with email or username already exists")
     }
-    // console.log(req.files)
 
     const avatarLocalPath = req.files?.avatar[0]?.path;
 
     let coverImageLocalPath;
-    // isArray method checks whether the passed value is an array or not
     if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
         coverImageLocalPath = req.files.coverImage[0].path
     }
@@ -97,7 +95,7 @@ const loginUser = asyncHandler(async (req, res) =>{
 
    const user = await User.findOne({
         $or: [{ username }, { email }],
-        role: { $ne: "doctor" } // <-- Exclude doctors
+        role: { $ne: "doctor" } 
     });
 
 
@@ -282,10 +280,10 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
      if (req.user.role !== "patient") {
         throw new ApiError(403, "Forbidden: not a user account");
     }
-    //TODO: delete old image - assignment
+
 
     const avatar = await uploadOnCloudinary(avatarLocalPath)
-// upload cloudinary par hogya lekin url nahi mila 
+
     if (!avatar.url) {
         throw new ApiError(400, "Error while uploading on avatar")
         
@@ -319,7 +317,6 @@ const updateUserCoverImage = asyncHandler(async(req, res) => {
         throw new ApiError(403, "Forbidden: not a user account");
     }
 
-    //TODO: delete old image - assignment
 
 
     const coverImage = await uploadOnCloudinary(coverImageLocalPath)

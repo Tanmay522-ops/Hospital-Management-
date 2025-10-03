@@ -76,16 +76,10 @@ router.route("/cover-image").patch(
     updateUserCoverImage
 );
 
-// ----------------------------
-// Public Doctor Routes
-// ----------------------------
 router.route("/").get(getAllDoctors);
 router.route("/:id").get(getDoctorById);
 router.route("/:id/availability").get(getDoctorAvailability);
 
-// ----------------------------
-// Doctor Profile Creation (Step 2 of Registration)
-// ----------------------------
 router.route("/profile").post(
     verifyJWT, 
     verifyRole(["doctor"]),
@@ -93,9 +87,6 @@ router.route("/profile").post(
     createDoctorProfile
 );
 
-// ----------------------------
-// Protected Doctor Profile Update
-// ----------------------------
 router.route("/:id").patch(
     verifyJWT, 
     verifyRole(["doctor", "admin"]),

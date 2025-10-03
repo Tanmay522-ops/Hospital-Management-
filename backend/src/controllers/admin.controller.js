@@ -1,6 +1,3 @@
-// File: controllers/admin.controller.js
-
-import bcrypt from "bcrypt";
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 import { User } from "../models/user.model.js";
@@ -10,14 +7,6 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
-
-// =================================================================
-// 🔑 AUTH HELPER FUNCTION
-// =================================================================
-
-/**
- * Generates both JWT Access and Refresh tokens for a given user ID.
- */
 const generateAccessAndRefreshTokens = async (userId) => {
     try {
         const user = await User.findById(userId);

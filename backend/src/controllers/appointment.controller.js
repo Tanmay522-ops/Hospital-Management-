@@ -4,7 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { Appointment } from "../models/appointment.model.js";
 import { Doctor } from "../models/doctor.model.js";
 import { Patient } from "../models/patient.model.js";
-import mongoose from "mongoose";
+
 const getPopulatedAppointment = async (appointmentId) => {
     return await Appointment.findById(appointmentId)
         .populate({

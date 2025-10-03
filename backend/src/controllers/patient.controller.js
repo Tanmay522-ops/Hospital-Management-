@@ -5,7 +5,7 @@ import { Patient } from "../models/patient.model.js";
 import { User } from "../models/user.model.js";
 import mongoose from "mongoose";
 
-// Utility function to fetch and populate the Patient profile
+
 const getPopulatedPatientProfile = async (patientId) => {
     return await Patient.findById(patientId)
         .populate({
@@ -15,30 +15,23 @@ const getPopulatedPatientProfile = async (patientId) => {
         .select('-__v'); 
 }
 
-// Phone number validation regex (matches 10 digits as per your schema)
+
 const phoneRegex = /^\d{10}$/;
 
-// ----------------------------------------------------
-// 1. Create Patient Profile
-// Endpoint: POST /api/v1/patients
-// Access: Authenticated User with role 'patient' (or Admin)
-// ----------------------------------------------------
 const createPatientProfile = asyncHandler(async (req, res) => {
     const userId = req.user._id; 
     const user = await User.findById(userId);
 
-    // Enforce role check for profile creation
     if (!user || (user.role !== 'patient' && user.role !== 'admin')) {
         throw new ApiError(403, "Access Denied. User must be a 'patient' or 'admin' to create a profile.");
     }
     
-    // Check for existing profile
+
     const existingProfile = await Patient.findOne({ user: userId });
     if (existingProfile) {
         throw new ApiError(409, "Patient profile already exists for this user.");
     }
     
-    // ⭐ Destructuring ALL fields from the Patient model
     const { 
         dateOfBirth, 
         gender, 
@@ -46,11 +39,11 @@ const createPatientProfile = asyncHandler(async (req, res) => {
         city, 
         zipCode, 
         bloodGroup, 
-        medicalHistory, // Expected to be an array of strings
+        medicalHistory, 
         emergencyContact 
     } = req.body;
 
-    // Validation for MANDATORY fields
+
     if (
         !dateOfBirth || 
         !gender || 
@@ -61,18 +54,17 @@ const createPatientProfile = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Missing required fields: dateOfBirth, gender, address, city, or zipCode.");
     }
     
-    // Validation for gender enum (using case-insensitivity)
+ 
     const normalizedGender = gender.charAt(0).toUpperCase() + gender.slice(1).toLowerCase();
     if (!['Male', 'Female', 'Other'].includes(normalizedGender)) {
         throw new ApiError(400, "Invalid gender value. Must be Male, Female, or Other.");
     }
 
-    // Validation for dateOfBirth format
+
     if (isNaN(new Date(dateOfBirth).getTime())) {
         throw new ApiError(400, "Invalid date of birth format.");
     }
-    
-    // Validation for emergency contact phone number if provided
+   
     if (emergencyContact && emergencyContact.phone && !phoneRegex.test(emergencyContact.phone)) {
         throw new ApiError(400, "Invalid emergency contact phone number. Must be 10 digits.");
     }
@@ -84,9 +76,8 @@ const createPatientProfile = asyncHandler(async (req, res) => {
         address,
         city,
         zipCode,
-        // Optional fields
+  
         bloodGroup: bloodGroup, 
-        // Ensure medicalHistory is an array (even if empty)
         medicalHistory: Array.isArray(medicalHistory) ? medicalHistory : [], 
         emergencyContact: emergencyContact || { name: "", phone: "" } 
     });
@@ -98,11 +89,6 @@ const createPatientProfile = asyncHandler(async (req, res) => {
     );
 });
 
-// ----------------------------------------------------
-// 2. Get Current Patient Profile
-// Endpoint: GET /api/v1/patients/me
-// Access: Authenticated User
-// ----------------------------------------------------
 const getCurrentPatientProfile = asyncHandler(async (req, res) => {
     const userId = req.user._id;
 
@@ -119,27 +105,20 @@ const getCurrentPatientProfile = asyncHandler(async (req, res) => {
     );
 });
 
-// ----------------------------------------------------
-// 3. Update Patient Profile
-// Endpoint: PATCH /api/v1/patients/me
-// Access: Authenticated User
-// ----------------------------------------------------
+
 const updatePatientProfile = asyncHandler(async (req, res) => {
     const updates = req.body;
     const userId = req.user._id;
 
-    // Security check: Remove user ID if present in update body
     delete updates.user; 
 
-    // Find the patient profile
     const patient = await Patient.findOne({ user: userId });
     if (!patient) {
         throw new ApiError(404, "Patient profile not found.");
     }
 
     const updateFields = {};
-    
-    // Logic to handle specific field updates and validation
+
     if (updates.dateOfBirth !== undefined) {
         if (isNaN(new Date(updates.dateOfBirth).getTime())) {
             throw new ApiError(400, "Invalid date of birth format.");
@@ -161,7 +140,7 @@ const updatePatientProfile = asyncHandler(async (req, res) => {
         }
     }
     
-    // Include all other simple field updates
+
     if (updates.address !== undefined) updateFields.address = updates.address;
     if (updates.city !== undefined) updateFields.city = updates.city;
     if (updates.zipCode !== undefined) updateFields.zipCode = updates.zipCode;
@@ -173,7 +152,6 @@ const updatePatientProfile = asyncHandler(async (req, res) => {
         throw new ApiError(400, "No valid fields provided for update.");
     }
     
-    // Mongoose will run validators on $set fields, including the bloodGroup enum and nested fields.
     const updatedPatient = await Patient.findOneAndUpdate(
         { user: userId },
         { $set: updateFields },
@@ -187,21 +165,16 @@ const updatePatientProfile = asyncHandler(async (req, res) => {
     );
 });
 
-// ----------------------------------------------------
-// 4. Get Patient Profile by User ID (Admin/Doctor Access)
-// Endpoint: GET /api/v1/patients/:userId
-// Access: Doctor or Admin
-// ----------------------------------------------------
+
 const getPatientProfileByUserId = asyncHandler(async (req, res) => {
     const targetUserId = req.params.userId;
     const requesterRole = req.user.role;
 
-    // Enforce authorization
     if (requesterRole !== 'doctor' && requesterRole !== 'admin') {
         throw new ApiError(403, "Access Denied. Only Doctors or Admins can view other patient profiles.");
     }
 
-    // Validate the ID format
+
     if (!mongoose.Types.ObjectId.isValid(targetUserId)) {
         throw new ApiError(400, "Invalid user ID format.");
     }

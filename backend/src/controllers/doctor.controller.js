@@ -1,17 +1,12 @@
-// File: controllers/doctor.controller.js
-
 import { Doctor } from "../models/doctor.model.js";
 import { User } from "../models/user.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js"; // Assume this utility is available
+import { uploadOnCloudinary } from "../utils/cloudinary.js"; 
 import mongoose from "mongoose";
 import jwt from "jsonwebtoken";
 
-// =================================================================
-// 🔑 AUTH HELPER FUNCTION
-// =================================================================
 
 const generateAccessAndRefereshTokens = async (userId) => {
   try {
@@ -34,14 +29,13 @@ const generateAccessAndRefereshTokens = async (userId) => {
   }
 };
 
-// Utility function to fetch and populate the Doctor profile
+
 const getPopulatedDoctorProfile = async (doctorId, includeSensitive = false) => {
     let selectFields = 'username email fullName avatar phone role';
     let doctorSelect = '-__v';
-    
-    // Admin needs to see the proof for verification
+
     if (!includeSensitive) {
-        doctorSelect += ' -proofDocument'; // Hide proof document URL by default
+        doctorSelect += ' -proofDocument'; 
     }
 
     return await Doctor.findById(doctorId)
@@ -53,16 +47,11 @@ const getPopulatedDoctorProfile = async (doctorId, includeSensitive = false) => 
 }
 
 
-// =================================================================
-// 🔒 DOCTOR AUTH CONTROLLERS (Public/JWT required)
-// =================================================================
-
 const registerUser = asyncHandler( async (req, res) => {
     
     const {fullName, email, username, password,phone } = req.body
     const role = "doctor";
     
-    // Check for required fields more cleanly
     if (
         [fullName, email, username, password, phone].some((field) => !field?.trim())
     ) {
@@ -135,9 +124,9 @@ const loginUser = asyncHandler(async (req, res) =>{
 
   const user = await User.findOne({
         $or: [{ username }, { email }],
-        role: "doctor" // <-- Only doctors can log in here
+        role: "doctor" 
     })
-    // 🛑 FIX 1: Must select password for comparison 🛑
+    
     .select("+password"); 
 
 
@@ -145,7 +134,7 @@ const loginUser = asyncHandler(async (req, res) =>{
         throw new ApiError(404, "Doctor user does not exist")
     }
     
-    // This now works because password hash is fetched
+    
    const isPasswordValid = await user.isPasswordCorrect(password)
 
    if (!isPasswordValid) {
@@ -237,7 +226,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
             secure: true
         }
     
-        // 🛑 FIX 2: Correct variable name from newRefreshToken to refreshToken 🛑
+        
         const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(user._id)
     
         return res
@@ -264,7 +253,7 @@ const changeCurrentPassword = asyncHandler(async(req, res) => {
         throw new ApiError(400, "Both old and new passwords are required");
     }
 
-    // 🛑 FIX 3: Must select password for comparison 🛑
+
     const user = await User.findById(req.user?._id).select("+password");
 
     if (user.role !== "doctor") {
@@ -278,7 +267,6 @@ const changeCurrentPassword = asyncHandler(async(req, res) => {
     }
 
     user.password = newPassword
-    // NOTE: Removing validateBeforeSave: false is recommended unless you are certain
     await user.save() 
 
     return res
@@ -290,7 +278,7 @@ const getCurrentUser = asyncHandler(async(req, res) => {
      if (req.user.role !== "doctor") {
         throw new ApiError(403, "Forbidden: not a doctor account");
     }
-    // req.user is populated by verifyJWT and safe to return
+    
     return res
     .status(200)
     .json(new ApiResponse(
@@ -314,16 +302,14 @@ const updateAccountDetails = asyncHandler(async(req, res) => {
     const normalizedUsername = username.toLowerCase().trim();
     const normalizedEmail = email.toLowerCase().trim();
 
-    // 🛑 FIX 4: Check if the new username is taken by a DIFFERENT user 🛑
     const existingUser = await User.findOne({ 
         username: normalizedUsername,
-        _id: { $ne: req.user._id } // Exclude the current user from the search
+        _id: { $ne: req.user._id } 
     });
 
     if (existingUser) {
         throw new ApiError(409, "Username is already taken. Please choose another one.");
     }
-    // 🛑 END OF UNIQUNESS CHECK 🛑
 
     const user = await User.findByIdAndUpdate(
         req.user?._id,
@@ -331,10 +317,10 @@ const updateAccountDetails = asyncHandler(async(req, res) => {
             $set: {
                 fullName,
                 email: normalizedEmail,
-                username: normalizedUsername // Use the validated username
+                username: normalizedUsername 
             }
         },
-        {new: true, runValidators: true} // Added runValidators
+        {new: true, runValidators: true} 
         
     ).select("-password -refreshToken")
 
@@ -355,11 +341,9 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
         throw new ApiError(403, "Forbidden: not a doctor account");
     }
 
-    //TODO: delete old image - assignment
-
     const avatar = await uploadOnCloudinary(avatarLocalPath)
-// upload cloudinary par hogya lekin url nahi mila 
-    if (!avatar?.url) { // Added optional chaining for safety
+
+    if (!avatar?.url) { 
         throw new ApiError(400, "Error while uploading avatar to Cloudinary")
         
     }
@@ -372,7 +356,7 @@ const updateUserAvatar = asyncHandler(async(req, res) => {
             }
         },
         {new: true}
-    ).select("-password -refreshToken") // Added refreshToken select exclusion
+    ).select("-password -refreshToken") 
 
     return res
     .status(200)
@@ -392,11 +376,10 @@ const updateUserCoverImage = asyncHandler(async(req, res) => {
         throw new ApiError(403, "Forbidden: not a doctor account");
     }
 
-    //TODO: delete old image - assignment
 
     const coverImage = await uploadOnCloudinary(coverImageLocalPath)
 
-    if (!coverImage?.url) { // Added optional chaining for safety
+    if (!coverImage?.url) { 
         throw new ApiError(400, "Error while uploading cover image to Cloudinary")
         
     }
@@ -409,7 +392,7 @@ const updateUserCoverImage = asyncHandler(async(req, res) => {
             }
         },
         {new: true}
-    ).select("-password -refreshToken") // Added refreshToken select exclusion
+    ).select("-password -refreshToken") 
 
     return res
     .status(200)
@@ -418,14 +401,6 @@ const updateUserCoverImage = asyncHandler(async(req, res) => {
     )
 })
 
-
-// =================================================================
-// 👨‍⚕️ DOCTOR PROFILE & PUBLIC CONTROLLERS
-// =================================================================
-
-// ----------------------------------------------------
-// 1. Create Doctor Profile (STEP 2 of Registration)
-// ----------------------------------------------------
 const createDoctorProfile = asyncHandler(async (req, res) => {
     const userId = req.user._id; 
     
@@ -477,9 +452,6 @@ const createDoctorProfile = asyncHandler(async (req, res) => {
     );
 });
 
-// ----------------------------------------------------
-// 2. Get All Doctors (Public Listing)
-// ----------------------------------------------------
 const getAllDoctors = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, specialization } = req.query;
     
@@ -489,8 +461,6 @@ const getAllDoctors = asyncHandler(async (req, res) => {
         query.specialization = specialization;
     }
 
-    // NOTE: This requires mongoose-paginate-v2 or similar library to work.
-    // If not using a pagination library, replace this with manual skip/limit/count.
     const options = {
         page: parseInt(page, 10),
         limit: parseInt(limit, 10),
@@ -509,9 +479,6 @@ const getAllDoctors = asyncHandler(async (req, res) => {
     );
 });
 
-// ----------------------------------------------------
-// 3. Get Single Doctor Profile (Public/Authenticated)
-// ----------------------------------------------------
 const getDoctorById = asyncHandler(async (req, res) => {
     const doctorId = req.params.id;
 
@@ -543,9 +510,7 @@ const getDoctorById = asyncHandler(async (req, res) => {
     );
 });
 
-// ----------------------------------------------------
-// 4. Update Doctor Profile
-// ----------------------------------------------------
+
 const updateDoctorProfile = asyncHandler(async (req, res) => {
     const doctorId = req.params.id;
     const { specialization, experience, availability } = req.body; 
@@ -586,9 +551,6 @@ const updateDoctorProfile = asyncHandler(async (req, res) => {
     );
 });
 
-// ----------------------------------------------------
-// 5. Get Doctor Availability
-// ----------------------------------------------------
 const getDoctorAvailability = asyncHandler(async (req, res) => {
     const doctorId = req.params.id;
 
@@ -607,9 +569,7 @@ const getDoctorAvailability = asyncHandler(async (req, res) => {
     );
 });
 
-// ----------------------------------------------------
-// 6. Admin Verification Endpoint 
-// ----------------------------------------------------
+
 const verifyDoctor = asyncHandler(async (req, res) => {
     const doctorId = req.params.id;
     const { status } = req.body; 
@@ -638,8 +598,6 @@ const verifyDoctor = asyncHandler(async (req, res) => {
         { new: true } 
     );
     
-    // NOTE: Admin also needs to update the linked User's role/verification status 
-    // This logic is currently missing here but highly recommended for system integrity.
 
     const populatedProfile = await getPopulatedDoctorProfile(updatedDoctor._id, true);
 

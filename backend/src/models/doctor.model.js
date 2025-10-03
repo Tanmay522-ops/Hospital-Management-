@@ -18,8 +18,6 @@ const doctorSchema = new Schema(
             type: Number,
             default: 0,
         },
-        
-        // ⭐ CRITICAL VERIFICATION FIELDS ⭐
         registrationNumber: { 
             type: String,
             required: true, 
@@ -39,8 +37,6 @@ const doctorSchema = new Schema(
             enum: ['pending', 'approved', 'rejected'],
             default: 'pending',
         },
-        // ⭐ END VERIFICATION FIELDS ⭐
-
         availability: [
             {
                 day: {
